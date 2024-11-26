@@ -1,0 +1,369 @@
+---
+- name: Core Fabric Configuration - For your Reference
+  gather_facts: false
+  hosts:
+    - ndfc01
+  vars:
+    fabric_name: mil-cml-wks-core
+    core1: 172.23.254.135
+    core2: 172.23.254.136
+    core3: 172.23.254.137
+  tasks:
+    - name: Create fabrics
+      cisco.dcnm.dcnm_fabric:
+        state: merged
+        skip_validation: true
+        config:
+        - FABRIC_NAME: "{{ fabric_name }}"
+          IS_READ_ONLY: 'false'
+          FABRIC_TYPE: LAN_CLASSIC
+          BGP_AS: 65058
+    - name: Discover and Add switches
+      cisco.dcnm.dcnm_inventory:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - seed_ip: "{{ core1 }}"
+            auth_proto: MD5
+            user_name: "{{ device_username }}"
+            password: "{{ device_password }}"
+            max_hops: 0
+            role: core_router
+            preserve_config: true
+          - seed_ip: "{{ core2 }}"
+            auth_proto: MD5
+            user_name: "{{ device_username }}"
+            password: "{{ device_password }}"
+            max_hops: 0
+            role: core_router
+            preserve_config: true
+          - seed_ip: "{{ core3 }}"
+            auth_proto: MD5
+            user_name: "{{ device_username }}"
+            password: "{{ device_password }}"
+            max_hops: 0
+            role: core_router
+            preserve_config: true
+    - name: Create loopback interfaces
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - name: lo0
+            type: lo
+            switch:
+              - "{{ core1 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: lo
+              int_vrf: ""
+              ipv4_addr: 1.1.1.1
+              route_tag: "54321"
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+                - 'no shutdown'
+              description: "Device Loopback"
+          - name: lo0
+            type: lo
+            switch:
+              - "{{ core2 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: lo
+              int_vrf: ""
+              ipv4_addr: 2.2.2.2
+              route_tag: "54321"
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+                - 'no shutdown'
+              description: "Device Loopback"
+          - name: lo0
+            type: lo
+            switch:
+              - "{{ core3 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: lo
+              int_vrf: ""
+              ipv4_addr: 3.3.3.3
+              route_tag: "54321"
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+                - 'no shutdown'
+              description: "Device Loopback"
+    - name: Push basic configuration on CORE1
+      cisco.dcnm.dcnm_policy:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        deploy: true
+        config:
+          - name: feature_lacp
+            create_additional_policy: false
+            priority: 100
+          - name: feature_ospf
+            create_additional_policy: false
+            priority: 100
+          - name: copp_policy
+            create_additional_policy: false
+            priority: 100
+            policy_vars:
+              POLICY: 'moderate'
+          - name: router_ospf_classic
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+                OSPF_COST: ''
+                OSPF_ROUTING_TAG: CORE-TRANSPORT
+                OSPF_BFD: 'true'
+                OSPF_AREA_ID: ''
+                OSPF_LOG_ENABLE: 'true'
+                OSPF_NSSA: 'false'
+                OSPF_AUTH_ENABLE: 'false'
+          - name: ptp_source_ip
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              SRC_IP: '1.1.1.1'
+          - name: v4_bgp_rr_neighbor
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: '65058'
+              BGP_NEIGHBOR_IP: '3.3.3.3'
+              INTF_NAME: 'Loopback0'
+          - name: bgp_neighbor_next_hop_self
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: '65058'
+              BGP_NEIGHBOR: '3.3.3.3'
+              IP_TYPE: 'ipv4'
+          - switch:
+              - ip: "{{ core1 }}"
+    - name: Push basic configuration on CORE2
+      cisco.dcnm.dcnm_policy:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        deploy: true
+        config:
+          - name: feature_lacp
+            create_additional_policy: false
+            priority: 100
+          - name: feature_ospf
+            create_additional_policy: false
+            priority: 100
+          - name: copp_policy
+            create_additional_policy: false
+            priority: 100
+            policy_vars:
+              POLICY: 'moderate'
+          - name: router_ospf_classic
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+                OSPF_COST: ''
+                OSPF_ROUTING_TAG: CORE-TRANSPORT
+                OSPF_BFD: 'true'
+                OSPF_AREA_ID: ''
+                OSPF_LOG_ENABLE: 'true'
+                OSPF_NSSA: 'false'
+                OSPF_AUTH_ENABLE: 'false'
+          - name: ptp_source_ip
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              SRC_IP: '2.2.2.2'
+          - name: v4_bgp_rr_neighbor
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: '65058'
+              BGP_NEIGHBOR_IP: '3.3.3.3'
+              INTF_NAME: 'Loopback0'
+          - name: bgp_neighbor_next_hop_self
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: '65058'
+              BGP_NEIGHBOR: '3.3.3.3'
+              IP_TYPE: 'ipv4'
+          - switch:
+              - ip: "{{ core2 }}"
+    - name: Push basic configuration on CORE3
+      cisco.dcnm.dcnm_policy:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        deploy: true
+        config:
+          - name: feature_lacp
+            create_additional_policy: false
+            priority: 100
+          - name: feature_ospf
+            create_additional_policy: false
+            priority: 100
+          - name: copp_policy
+            create_additional_policy: false
+            priority: 100
+            policy_vars:
+              POLICY: 'moderate'
+          - name: router_ospf_classic
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+                OSPF_COST: ''
+                OSPF_ROUTING_TAG: CORE-TRANSPORT
+                OSPF_BFD: 'true'
+                OSPF_AREA_ID: ''
+                OSPF_LOG_ENABLE: 'true'
+                OSPF_NSSA: 'false'
+                OSPF_AUTH_ENABLE: 'false'
+          - name: ptp_source_ip
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              SRC_IP: '3.3.3.3'
+          - name: v4_bgp_rr
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: '65099'
+              BGP_NEIGHBOR_IP: '1.1.1.1'
+              INTF_NAME: 'Loopback0'
+          - name: v4_bgp_rr
+            create_additional_policy: false
+            priority: 101
+            policy_vars:
+              BGP_AS: '65099'
+              BGP_NEIGHBOR_IP: '2.2.2.2'
+              INTF_NAME: 'Loopback0'
+          - switch:
+              - ip: "{{ core3 }}"
+    - name: Create Core interdevice links
+      cisco.dcnm.dcnm_interface:
+        fabric: "{{ fabric_name }}"
+        state: merged
+        config:
+          - name: po999
+            type: pc
+            switch:
+              - "{{ core1 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: l3
+              members:
+                - e1/22
+                - e1/23
+                - e1/24
+              int_vrf: 'default'
+              ipv4_addr: '172.31.255.65'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              pc_mode: 'active'
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+              description: "to-core-2"
+          - name: po999
+            type: pc
+            switch:
+              - "{{ core2 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: l3
+              members:
+                - e1/22
+                - e1/23
+                - e1/24
+              int_vrf: 'default'
+              ipv4_addr: '172.31.255.66'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              pc_mode: 'active'
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+              description: "to-core-1"
+          - name: Ethernet1/51
+            type: eth
+            switch:
+              - "{{ core1 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.31.255.89'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+              description: "to-core-3"
+          - name: Ethernet1/1
+            type: eth
+            switch:
+              - "{{ core3 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.31.255.90'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+              description: "to-core-1"
+          - name: Ethernet1/2
+            type: eth
+            switch:
+              - "{{ core3 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.31.255.94'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+              description: "to-core-2"
+          - name: Ethernet1/51
+            type: eth
+            switch:
+              - "{{ core2 }}"
+            deploy: false
+            profile:
+              admin_state: true
+              mode: routed
+              int_vrf: 'default'
+              ipv4_addr: '172.31.255.93'
+              route_tag: '54321'
+              ipv4_mask_len: '30'
+              cmds:
+                - 'ip ospf network point-to-point'
+                - 'ip router ospf CORE-TRANSPORT area 0.0.0.0'
+              description: "to-core-3"
+    - name: Recalculate
+      tags: deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-save"
+        json_data: "{{ {} | to_json }}"
+    - name: Deploy
+      tags: deploy
+      cisco.dcnm.dcnm_rest:
+        method: POST
+        path: "/appcenter/cisco/ndfc/api/v1/lan-fabric/rest/control/fabrics/{{ fabric_name }}/config-deploy?forceShowRun=true"
+        json_data: "{{ {} | to_json }}"

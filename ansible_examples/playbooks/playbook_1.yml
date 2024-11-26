@@ -1,0 +1,50 @@
+---
+- name: Add VRFs and Networks, no variables used. Everthing is hardcoded in the playbook
+  gather_facts: false
+  hosts:
+    - ndfc01
+  tasks:
+    - name: Create VRFs
+      tags: vrfs
+      cisco.dcnm.dcnm_vrf:
+        fabric: mil-cml-wks-fabric
+        state: merged
+        config:
+          - vrf_name: ansible-static-vrf
+            vrf_template: Default_VRF_Universal
+            vrf_extension_template: Default_VRF_Extension_Universal
+            deploy: false
+    - name: Create Networks
+      tags: networks
+      cisco.dcnm.dcnm_network:
+        fabric: mil-cml-wks-fabric
+        state: deleted
+        config:
+          - net_name: ansible-static-network-1
+            vrf_name: ansible-static-vrf
+            net_id: 202301
+            net_template: Default_Network_Universal
+            net_extension_template: Default_Network_Extension_Universal
+            vlan_id: 1331
+            gw_ip_subnet: 172.25.133.254/24
+            attach:
+              - ip_address: 172.23.254.129
+                ports: [Port-Channel10]
+              - ip_address: 172.23.254.130
+                ports: [Port-Channel10]
+            deploy: true
+          - net_name: ansible-static-network-2
+            int_desc: ansible-static-network-2
+            vrf_name: ansible-static-vrf
+            net_id: 202302
+            vlan_id: 1332
+            net_template: Default_Network_Universal
+            net_extension_template: Default_Network_Extension_Universal
+            gw_ip_subnet: 172.25.134.254/24
+            attach:
+              - ip_address: 172.23.254.129
+                ports: [Port-Channel10]
+              - ip_address: 172.23.254.130
+                ports: [Port-Channel10]
+            deploy: true
+
