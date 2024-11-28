@@ -23,7 +23,6 @@ vxlan:
       rp_mode: asm
       underlay_rp_loopback_id: 254
       trm_enable: false
-      # WTF is this? Should be for BUM, not only TRM
       trm_default_group: 239.1.1.0
       underlay_primary_rp_loopback_id: 2
       underlay_backup_rp_loopback_id: 3

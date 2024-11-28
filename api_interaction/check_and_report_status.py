@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)-8s [%(fi
 
 ##
 api_key = {"api_key": "4b725bc0297d4491a79af60494080e967651427bc6b54d02bc671d0792e570d5", "username": "admin"}
-aggressive = False
+aggressive = True
 ##
 
 def send_webex_message(message):
@@ -49,7 +49,7 @@ def main():
             # We now trigger a full sync on the devices, NDFC will request the latest running-config
             report = ndfc_obj.force_calculate_device_diff(fabric, serials)
             if not report:
-                # That means an namanaged Fabric
+                # That means an unmanaged Fabric
                 continue
             for device in report:
                 if device['pendingConfig']:
